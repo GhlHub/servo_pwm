@@ -16,7 +16,7 @@ The [AMD/Xilinx Timer / Counter IP Core](https://docs.amd.com/r/en-US/pg079-axi-
 # Theory of Operation
 - This IP Core operates in terms of Unit Interval or abbreviated as UI. This is what allows this core to be flight firmware friendly. The *UI Clock Ticks Register* defines the number of AXI clock ticks for a UI. In the case for RC Servo Motor Control, a convienant UI is the number of clock ticks for 1uS. In this way the flight controller firmware can write 1000 for 1mS, 1500 for 1.5mS and 2000 for 2mS to the *Channel x UI Count Register*. 
 - In addition the *Channel x UI Count Register* is internally double buffered so modifying the register's value in the middle of a PWM Frame will not cause a glitch on the output.
-- Similarly the PWM Frame Width is defined in units of UI. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 20000 to *Frame UI Count Register*. Writing 1500 to the *Frame UI Count Register* sets  the frame width to 15mS. Easy.
+- Similarly the PWM Frame Width is defined in units of UI. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 20000 to *Frame UI Count Register*. Writing 15000 to the *Frame UI Count Register* sets  the frame width to 15mS. Easy.
 
 # Register Interface
 ## List of registers
