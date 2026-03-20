@@ -73,3 +73,20 @@ Note: All registers are 32-bits wide.
 | Reserved | Channel UI Count |
 
 - Channel UI Count - Defines the width of the pulse in number of UI. By design, changing this register value will not take effect until the start of the next frame. This is the only register class that is protected this way, and it prevents glitches from being accidently generated on the output pulse.
+
+# Estimated Resource Usage
+
+Estimated from Vivado `2025.2` out-of-context synthesis of top-level `servo_pwm` targeting `xc7z020clg400-1`.
+
+| Resource | Used |
+| ------------- | ------------- |
+| Slice LUTs | 213 |
+| Slice Registers | 182 |
+| Block RAM Tile | 0 |
+| DSPs | 0 |
+| Bonded IOB | 4 |
+
+Notes:
+- This is a synthesis-only estimate. Post-place/post-route utilization can differ.
+- LUT count is the Vivado synthesized value after LUT combining and is typically somewhat conservative before full implementation.
+- The estimate includes the 4 `OBUFT` output buffers used by the PWM pins.

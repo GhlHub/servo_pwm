@@ -29,6 +29,8 @@ The packaged IP version is currently `1.1`.
   Vivado batch Tcl to reopen and repackage the IP core from `component.xml`.
 - `scripts/repackage_ip.sh`
   Shell wrapper for the Vivado repackaging flow.
+- `scripts/estimate_resources.tcl`
+  Vivado batch Tcl for out-of-context resource estimation of the top-level RTL.
 - `tb/servo_pwm_tb.sv`
   Self-checking XSIM testbench for the RTL.
 - `tb/servo_pwm_driver_test.c`
@@ -96,6 +98,30 @@ Expected outputs after repackaging:
 - `component.xml` may be refreshed
 - `xgui/servo_pwm_v1_1.tcl` may be regenerated
 
+### Resource estimation
+
+Use:
+
+```bash
+vivado -mode batch -source scripts/estimate_resources.tcl
+```
+
+This performs out-of-context synthesis of top-level `servo_pwm` for:
+
+- part: `xc7z020clg400-1`
+
+The script writes:
+
+- `resource_estimate.rpt`
+
+Current measured estimate recorded in the README:
+
+- Slice LUTs: `213`
+- Slice Registers: `182`
+- Block RAM Tile: `0`
+- DSPs: `0`
+- Bonded IOB: `4`
+
 ## Packaging / Versioning Notes
 
 - When bumping the packaged IP version, update:
@@ -105,6 +131,7 @@ Expected outputs after repackaging:
   - display/component names in `component.xml`
   - `xilinx:canUpgradeFrom` so the VLNV matches the actual vendor/library/name namespace
 - After packaging-related source changes, run `./scripts/repackage_ip.sh` instead of editing package checksums by hand.
+- After structural RTL changes that may affect area, rerun `scripts/estimate_resources.tcl` and update the README if the reported utilization changes materially.
 - Current VLNV namespace is:
   - vendor: `SFG`
   - library: `user`
