@@ -16,3 +16,6 @@ tb/xsim/
 tb/sw_test/
 tb/sw_test_cpp.cpp
 tb/sw_test_cpp.o
+
+# Generated reports
+resource_estimate.rpt
