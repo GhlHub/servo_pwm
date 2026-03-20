@@ -258,6 +258,28 @@ begin
 end
 endtask
 
+task automatic expect_no_sof_for_ui_pulses(
+    input int count,
+    input string label
+);
+    int seen;
+    bit sof_seen;
+begin
+    seen = 0;
+    sof_seen = 1'b0;
+    while (seen < count) begin
+        sample_cycle();
+        if (dut.pulse_sof) begin
+            sof_seen = 1'b1;
+        end
+        if (dut.pulse_ui) begin
+            seen++;
+        end
+    end
+    expect_true(label, !sof_seen);
+end
+endtask
+
 task automatic capture_next_frame_counts(
     input int ch_idx,
     output int ui_pulses,
@@ -382,6 +404,87 @@ begin
 end
 endtask
 
+task automatic test_mid_frame_disable;
+    int frame_ui_pulses;
+    int high_ui_pulses;
+begin
+    $display("TESTCASE: mid_frame_disable");
+
+    axi_write(UI_TICKS_ADDR,     32'd1);
+    axi_write(SOF_UI_TICKS_ADDR, 32'd5);
+    axi_write(CH0_UI_TICKS_ADDR, 32'd4);
+    axi_write(CTRL_ADDR,         32'h0000_0001);
+
+    wait_for_sof();
+    fork
+        begin
+            wait_for_ui_pulses(1);
+            axi_write(CTRL_ADDR, 32'h0000_0000);
+        end
+        begin
+            capture_frame_from_current_sof(0, frame_ui_pulses, high_ui_pulses);
+        end
+    join
+
+    expect_eq_int("Current frame completes after disable request", high_ui_pulses, 4);
+    read_expect(CTRL_ADDR, 32'h0000_0000, "CTRL active bit clears after disable at frame boundary");
+    expect_no_sof_for_ui_pulses(6, "No new frame starts after channel is disabled");
+    expect_true("Disabled channel remains actively driven low when io_enb=0", ch_pwm_pin[0] === 1'b0);
+end
+endtask
+
+task automatic test_mid_frame_enable;
+    int frame_ui_pulses;
+    int high_ui_pulses;
+begin
+    $display("TESTCASE: mid_frame_enable");
+
+    axi_write(UI_TICKS_ADDR,     32'd1);
+    axi_write(SOF_UI_TICKS_ADDR, 32'd5);
+    axi_write(CH0_UI_TICKS_ADDR, 32'd3);
+    axi_write(CTRL_ADDR,         32'h0000_0000);
+
+    expect_no_sof_for_ui_pulses(3, "No frame starts while all channels are disabled");
+    wait_for_ui_pulses(1);
+    axi_write(CTRL_ADDR, 32'h0000_0001);
+
+    capture_next_frame_counts(0, frame_ui_pulses, high_ui_pulses);
+    expect_eq_int("Enabled channel starts on first frame after enable", high_ui_pulses, 3);
+    expect_true("Enabled channel is driven when io_enb=0", ch_pwm_pin[0] !== 1'bz);
+
+    wait_for_sof();
+    read_expect(CTRL_ADDR, 32'h0001_0001, "CTRL active bit sets after enable");
+end
+endtask
+
+task automatic test_io_enb_behavior;
+    int frame_ui_pulses;
+    int high_ui_pulses;
+begin
+    $display("TESTCASE: io_enb_behavior");
+
+    axi_write(UI_TICKS_ADDR,     32'd1);
+    axi_write(SOF_UI_TICKS_ADDR, 32'd5);
+    axi_write(CH0_UI_TICKS_ADDR, 32'd3);
+    axi_write(CTRL_ADDR,         32'h0000_0010);
+
+    wait_for_sof();
+    read_expect(CTRL_ADDR, 32'h0000_0010, "CTRL readback with io_enb set and channel disabled");
+    wait_for_ui_pulses(1);
+    expect_true("io_enb=1 tri-states disabled channel after frame boundary", ch_pwm_pin[0] === 1'bz);
+
+    axi_write(CTRL_ADDR, 32'h0000_0011);
+
+    capture_next_frame_counts(0, frame_ui_pulses, high_ui_pulses);
+    expect_eq_int("Frame UI pulses unchanged with io_enb set", frame_ui_pulses, 5);
+    expect_eq_int("Tri-stated output never drives a visible high", high_ui_pulses, 0);
+    expect_true("io_enb=1 keeps enabled channel tri-stated", ch_pwm_pin[0] === 1'bz);
+
+    wait_for_sof();
+    read_expect(CTRL_ADDR, 32'h0001_0011, "CTRL active bit can assert while io_enb keeps output tri-stated");
+end
+endtask
+
 initial begin
     clk = 1'b0;
     total_checks = 0;
@@ -393,6 +496,9 @@ initial begin
     test_register_readback_and_wstrb();
     test_single_channel_pwm();
     test_shadow_update_on_next_frame();
+    test_mid_frame_disable();
+    test_mid_frame_enable();
+    test_io_enb_behavior();
 
     repeat (5) @(posedge clk);
 

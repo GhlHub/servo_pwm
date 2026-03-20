@@ -449,11 +449,11 @@ end
 
 wire [7:0]  ui_divisor;
 wire [15:0] sof_ui_divisor;
-wire ch_en_z;
+wire ch_idle;
 
 assign io_enb = slv_reg0[7:4];
 assign ch_en  = slv_reg0[3:0];
-assign ch_en_z = (slv_reg0[3:0] == 4'b0000);
+assign ch_idle = ((slv_reg0[3:0] == 4'b0000) && (ch_active == 4'b0000));
 
 assign ui_divisor     = slv_reg2[7:0];
 assign sof_ui_divisor = slv_reg3[15:0];
@@ -484,7 +484,7 @@ always@(posedge S_AXI_ACLK) begin
         default: pulse_ui <= 1'b0; 
     endcase
     
-    casez({S_AXI_ARESETN, ch_en_z, sof_ui_cntr_done, ui_cntr_done})
+    casez({S_AXI_ARESETN, ch_idle, sof_ui_cntr_done, ui_cntr_done})
         4'b0???: sof_ui_cntr <= 0;
         4'b11??: sof_ui_cntr <= 0;
 			4'b101?: sof_ui_cntr <= 0;
