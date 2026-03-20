@@ -8,6 +8,7 @@ extern "C" {
 
 /****************** Include Files ********************/
 #include "xil_types.h"
+#include "xil_io.h"
 #include "xstatus.h"
 
 #define SPWM_CTRL_OFFSET		0x00
@@ -39,7 +40,7 @@ extern "C" {
     Xil_In32((BaseAddress) + (RegOffset))
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif
 
 #endif

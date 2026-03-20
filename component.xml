@@ -3,7 +3,7 @@
   <spirit:vendor>SFG</spirit:vendor>
   <spirit:library>user</spirit:library>
   <spirit:name>servo_pwm</spirit:name>
-  <spirit:version>1.0</spirit:version>
+  <spirit:version>1.1</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
       <spirit:name>s00_axi</spirit:name>
@@ -679,14 +679,14 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/servo_pwm_slave_lite_v1_0_S00_AXI.v</spirit:name>
+        <spirit:name>src/servo_pwm_slave_lite_v1_1_S00_AXI.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/servo_pwm.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_83ed0231</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_6a8c44b9</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -708,7 +708,7 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/servo_pwm_slave_lite_v1_0_S00_AXI.v</spirit:name>
+        <spirit:name>src/servo_pwm_slave_lite_v1_1_S00_AXI.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
@@ -721,9 +721,9 @@
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/servo_pwm_v1_0.tcl</spirit:name>
+        <spirit:name>xgui/servo_pwm_v1_1.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_dfc3df4a</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_c6886ca5</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -742,7 +742,7 @@
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">servo_pwm_v1_0</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">servo_pwm_v1_1</spirit:value>
     </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
@@ -777,17 +777,17 @@
       <xilinx:taxonomies>
         <xilinx:taxonomy>/UserIP</xilinx:taxonomy>
       </xilinx:taxonomies>
-      <xilinx:displayName>servo_pwm_v1_0</xilinx:displayName>
+      <xilinx:displayName>servo_pwm_v1_1</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>Silicon Food Group</xilinx:vendorDisplayName>
       <xilinx:coreRevision>1</xilinx:coreRevision>
       <xilinx:upgrades>
-        <xilinx:canUpgradeFrom>xilinx.com:user:servo_pwm:1.0</xilinx:canUpgradeFrom>
+        <xilinx:canUpgradeFrom>SFG:user:servo_pwm:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2025-12-07T20:49:50Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-03-20T13:57:24Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
-      <xilinx:xilinxVersion>2024.2</xilinx:xilinxVersion>
+      <xilinx:xilinxVersion>2025.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="9add38af"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="0c04c4c2"/>
       <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="0f77382b"/>

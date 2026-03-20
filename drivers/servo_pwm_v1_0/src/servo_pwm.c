@@ -37,7 +37,7 @@ int  ServoPwm_CfgInitialize(PServoPwm uPtr, UINTPTR EffectiveAddr) {
 void ServoPwm_EnableCh(PServoPwm uPtr, u32 chNum) {
 	u32 en;
 	
-	if(chNum > SPWM_NUM_OF_CH)
+	if(chNum >= SPWM_NUM_OF_CH)
 		return;
 	
 	en = 0x01 << chNum;
@@ -48,7 +48,7 @@ void ServoPwm_EnableCh(PServoPwm uPtr, u32 chNum) {
 void ServoPwm_DisableCh(PServoPwm uPtr, u32 chNum) {
 	u32 en;
 	
-	if(chNum > SPWM_NUM_OF_CH)
+	if(chNum >= SPWM_NUM_OF_CH)
 		return;
 	
 	en = 0x01 << chNum;
@@ -73,7 +73,7 @@ void ServoPwm_SetSofUiTicks(PServoPwm uPtr, u32 uiTicks) {
 }
 
 void ServoPwm_SetChUiTicks(PServoPwm uPtr, u32 chNum, u32 uiTicks) {
-	if(chNum > SPWM_NUM_OF_CH)
+	if(chNum >= SPWM_NUM_OF_CH)
 		return;
 	if(uiTicks > SPWM_CH_UI_TICKS_MASK)
 		return;
@@ -91,13 +91,10 @@ u32 ServoPwm_GetSofUiTicks(PServoPwm uPtr) {
 }
 
 u32 ServoPwm_GetChUiTicks(PServoPwm uPtr, u32 chNum) {
-	u32 idx;
-
-	if(chNum > SPWM_NUM_OF_CH)
+	if(chNum >= SPWM_NUM_OF_CH)
 		return 0xffffffff;
-	
-	idx = chNum - 1;
-	return uPtr->pulseUiTicks[idx];
+
+	return uPtr->pulseUiTicks[chNum];
 }
 
 u32 ServoPwm_GetStatus(PServoPwm uPtr) {

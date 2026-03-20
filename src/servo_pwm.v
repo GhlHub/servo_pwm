@@ -56,10 +56,10 @@ wire [3:0] ch_active;
 	
 	
 // Instantiation of Axi Bus Interface S00_AXI
-	servo_pwm_slave_lite_v1_0_S00_AXI # ( 
+	servo_pwm_slave_lite_v1_1_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
-	) servo_pwm_slave_lite_v1_0_S00_AXI_inst (
+	) servo_pwm_slave_lite_v1_1_S00_AXI_inst (
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),
@@ -93,11 +93,8 @@ wire [3:0] ch_active;
 	.ch_active              (ch_active)	
 	);
 
-reg rst;
-always@(posedge s00_axi_aclk)
-begin
-    rst <= ~s00_axi_aresetn;
-end
+wire rst;
+assign rst = ~s00_axi_aresetn;
 
 	// Add user logic here
 servo_pwm_gen servo_pwm_gen_inst(

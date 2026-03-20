@@ -14,9 +14,10 @@ The [AMD/Xilinx Timer / Counter IP Core](https://docs.amd.com/r/en-US/pg079-axi-
 - The register interface allows the firmware to directly write these time values without any translation that might be required when using a general purpose IP Core.
 
 # Theory of Operation
-- This IP Core operates in terms of Unit Interval or abbreviated as UI. This is what allows this core to be flight firmware friendly. The *UI Clock Ticks Register* defines the number of AXI clock ticks for a UI. In the case for RC Servo Motor Control, a convienant UI is the number of clock ticks for 1uS. In this way the flight controller firmware can write 1000 for 1mS, 1500 for 1.5mS and 2000 for 2mS to the *Channel x UI Count Register*. 
+- This IP Core operates in terms of Unit Interval or abbreviated as UI. This is what allows this core to be flight firmware friendly. The *UI Clock Ticks Register* is implemented as a terminal-count divisor, so a programmed value of `N` generates one UI pulse every `N+1` AXI clock cycles. In the case for RC Servo Motor Control, a convienant UI is the number of clock ticks for 1uS minus one. In this way the flight controller firmware can write 1000 for 1mS, 1500 for 1.5mS and 2000 for 2mS to the *Channel x UI Count Register*. 
 - In addition the *Channel x UI Count Register* is internally double buffered so modifying the register's value in the middle of a PWM Frame will not cause a glitch on the output.
-- Similarly the PWM Frame Width is defined in units of UI. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 20000 to *Frame UI Count Register*. Writing 15000 to the *Frame UI Count Register* sets  the frame width to 15mS. Easy.
+- Only the per-channel pulse width registers are frame-latched. Writes to the *UI Clock Ticks Register* and *Frame UI Count Register* are applied directly to the live timing logic. This is intentional design behavior, so software should avoid updating those registers in the middle of an active frame unless an immediate timing change is desired.
+- Similarly the PWM Frame Width is defined in units of UI. The *Frame UI Count Register* is also implemented as a terminal count, so a programmed value of `N` spans `N+1` UI intervals before the next start-of-frame pulse. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 19999 to *Frame UI Count Register* for a 20000 UI frame. Writing 14999 to the *Frame UI Count Register* sets the frame width to 15000 UI. Easy.
 
 # Register Interface
 ## List of registers
@@ -35,7 +36,7 @@ Note: All registers are 32-bits wide.
 | 0x1C | Reserved | |
 | 0x20 | Channel 0 UI Count Register | Defines number of UI the pulse is high in each frame |
 | 0x24 | Channel 1 UI Count Register | Defines number of UI the pulse is high in each frame |
-| 0x24 | Channel 2 UI Count Register | Defines number of UI the pulse is high in each frame |
+| 0x28 | Channel 2 UI Count Register | Defines number of UI the pulse is high in each frame |
 | 0x2C | Channel 3 UI Count Register | Defines number of UI the pulse is high in each frame |
 
 ### Control Register
@@ -52,14 +53,16 @@ Note: All registers are 32-bits wide.
 | - | - |
 | Reserved | UI Clock Ticks Count |
 
-- UI Clock Ticks Count - Defines the number of clock ticks per Unit Interval (UI)
+- UI Clock Ticks Count - Terminal count for the UI divider. A value of `N` produces one UI pulse every `N+1` AXI clock ticks.
+- Writes take effect immediately and are not frame-latched.
 
 ### Frame UI Ticks Register
 | 31:16 | 15:0 |
 | - | - |
 | Reserved | Frame UI Count |
 
-- Frame UI Count - Defines the width of a frame in number of UI
+- Frame UI Count - Terminal count for the frame divider. A value of `N` spans `N+1` UI intervals per frame.
+- Writes take effect immediately and are not frame-latched.
 
 ### Channel 0 UI Count Register
 ### Channel 1 UI Count Register
@@ -69,4 +72,4 @@ Note: All registers are 32-bits wide.
 | - | - |
 | Reserved | Channel UI Count |
 
-- Channel UI Count - Defines the width of the pulse in number of UI. By design, changing this register value will not take effect until the start of the next frame. This is to prevent glitches being accidently generated.
+- Channel UI Count - Defines the width of the pulse in number of UI. By design, changing this register value will not take effect until the start of the next frame. This is the only register class that is protected this way, and it prevents glitches from being accidently generated on the output pulse.

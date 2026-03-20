@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-	module servo_pwm_slave_lite_v1_0_S00_AXI #
+	module servo_pwm_slave_lite_v1_1_S00_AXI #
 	(
 		// Users to add parameters here
 
@@ -100,6 +100,7 @@ input  wire [3:0] ch_active,
 	reg  	axi_arready;
 	reg [1 : 0] 	axi_rresp;
 	reg  	axi_rvalid;
+	reg  	aw_en;
 
 	// Example-specific design signals
 	// local parameter for addressing 32 bit / 64 bit C_S_AXI_DATA_WIDTH
@@ -139,78 +140,64 @@ input  wire [3:0] ch_active,
 	assign S_AXI_ARREADY	= axi_arready;
 	assign S_AXI_RRESP	= axi_rresp;
 	assign S_AXI_RVALID	= axi_rvalid;
+	wire slv_reg_wren;
+	wire unused_axi_inputs;
 	 //state machine varibles 
-	 reg [1:0] state_write;
 	 reg [1:0] state_read;
 	 //State machine local parameters
-	 localparam Idle = 2'b00,Raddr = 2'b10,Rdata = 2'b11 ,Waddr = 2'b10,Wdata = 2'b11;
-	// Implement Write state machine
-	// Outstanding write transactions are not supported by the slave i.e., master should assert bready to receive response on or before it starts sending the new transaction
+	 localparam Idle = 2'b00,Raddr = 2'b10,Rdata = 2'b11;
+
+	assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
+	assign unused_axi_inputs = &{1'b0, S_AXI_AWPROT, S_AXI_ARPROT, axi_awaddr[ADDR_LSB-1:0], axi_araddr[ADDR_LSB-1:0]};
+
+	// Implement AXI-Lite write channel. This slave accepts one write transaction
+	// at a time and only acknowledges an address when the matching write data is
+	// also present, which is AXI-Lite compliant.
 	always @(posedge S_AXI_ACLK)                                 
 	  begin                                 
 	     if (S_AXI_ARESETN == 1'b0)                                 
 	       begin                                 
-	         axi_awready <= 0;                                 
-	         axi_wready <= 0;                                 
-	         axi_bvalid <= 0;                                 
-	         axi_bresp <= 0;                                 
-	         axi_awaddr <= 0;                                 
-	         state_write <= Idle;                                 
+		         axi_awready <= 0;                                 
+		         axi_wready <= 0;                                 
+		         axi_bvalid <= 0;                                 
+		         axi_bresp <= 2'b0;                                 
+		         axi_awaddr <= 0;                                 
+		         aw_en <= 1'b1;                                 
 	       end                                 
 	     else                                  
 	       begin                                 
-	         case(state_write)                                 
-	           Idle:                                      
-	             begin                                 
-	               if(S_AXI_ARESETN == 1'b1)                                  
-	                 begin                                 
-	                   axi_awready <= 1'b1;                                 
-	                   axi_wready <= 1'b1;                                 
-	                   state_write <= Waddr;                                 
-	                 end                                 
-	               else state_write <= state_write;                                 
-	             end                                 
-	           Waddr:        //At this state, slave is ready to receive address along with corresponding control signals and first data packet. Response valid is also handled at this state                                 
-	             begin                                 
-	               if (S_AXI_AWVALID && S_AXI_AWREADY)                                 
-	                  begin                                 
-	                    axi_awaddr <= S_AXI_AWADDR;                                 
-	                    if(S_AXI_WVALID)                                  
-	                      begin                                   
-	                        axi_awready <= 1'b1;                                 
-	                        state_write <= Waddr;                                 
-	                        axi_bvalid <= 1'b1;                                 
-	                      end                                 
-	                    else                                  
-	                      begin                                 
-	                        axi_awready <= 1'b0;                                 
-	                        state_write <= Wdata;                                 
-	                        if (S_AXI_BREADY && axi_bvalid) axi_bvalid <= 1'b0;                                 
-	                      end                                 
-	                  end                                 
-	               else                                  
-	                  begin                                 
-	                    state_write <= state_write;                                 
-	                    if (S_AXI_BREADY && axi_bvalid) axi_bvalid <= 1'b0;                                 
-	                   end                                 
-	             end                                 
-	          Wdata:        //At this state, slave is ready to receive the data packets until the number of transfers is equal to burst length                                 
-	             begin                                 
-	               if (S_AXI_WVALID)                                 
-	                 begin                                 
-	                   state_write <= Waddr;                                 
-	                   axi_bvalid <= 1'b1;                                 
-	                   axi_awready <= 1'b1;                                 
-	                 end                                 
-	                else                                  
-	                 begin                                 
-	                   state_write <= state_write;                                 
-	                   if (S_AXI_BREADY && axi_bvalid) axi_bvalid <= 1'b0;                                 
-	                 end                                              
-	             end                                 
-	          endcase                                 
-	        end                                 
-	      end                                 
+	         if (~axi_awready && S_AXI_AWVALID && S_AXI_WVALID && aw_en)
+	           begin
+	             axi_awready <= 1'b1;
+	             axi_awaddr <= S_AXI_AWADDR;
+	             aw_en <= 1'b0;
+	           end
+	         else
+	           begin
+	             axi_awready <= 1'b0;
+	           end
+
+	         if (~axi_wready && S_AXI_WVALID && S_AXI_AWVALID && aw_en)
+	           begin
+	             axi_wready <= 1'b1;
+	           end
+	         else
+	           begin
+	             axi_wready <= 1'b0;
+	           end
+
+	         if (slv_reg_wren)
+	           begin
+	             axi_bvalid <= 1'b1;
+	             axi_bresp <= 2'b0;
+	           end
+	         else if (axi_bvalid && S_AXI_BREADY)
+	           begin
+	             axi_bvalid <= 1'b0;
+	             aw_en <= 1'b1;
+	           end
+	        end
+	      end
 
 	// Implement memory mapped register select and write logic generation
 	// The write data is accepted and written to memory mapped registers when
@@ -243,9 +230,9 @@ input  wire [3:0] ch_active,
 	      slv_reg15 <= 0;
 	    end 
 	  else begin
-	    if (S_AXI_WVALID)
-	      begin
-	        case ( (S_AXI_AWVALID) ? S_AXI_AWADDR[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] : axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
+		    if (slv_reg_wren)
+		      begin
+		        case (axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB])
 	          4'h0:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -384,14 +371,14 @@ input  wire [3:0] ch_active,
 	// Implement read state machine
 	  always @(posedge S_AXI_ACLK)                                       
 	    begin                                       
-	      if (S_AXI_ARESETN == 1'b0)                                       
-	        begin                                       
-	         //asserting initial values to all 0's during reset                                       
-	         axi_arready <= 1'b0;                                       
-	         axi_rvalid <= 1'b0;                                       
-	         axi_rresp <= 1'b0;                                       
-	         state_read <= Idle;                                       
-	        end                                       
+		      if (S_AXI_ARESETN == 1'b0)                                       
+		        begin                                       
+		         //asserting initial values to all 0's during reset                                       
+		         axi_arready <= 1'b0;                                       
+		         axi_rvalid <= 1'b0;                                       
+		         axi_rresp <= 2'b0;                                       
+		         state_read <= Idle;                                       
+		        end                                       
 	      else                                       
 	        begin                                       
 	          case(state_read)                                       
@@ -413,21 +400,28 @@ input  wire [3:0] ch_active,
 	                    axi_rvalid <= 1'b1;                                       
 	                    axi_arready <= 1'b0;                                       
 	                  end                                       
-	                else state_read <= state_read;                                       
-	              end                                       
-	            Rdata:        //At this state, slave is ready to send the data packets until the number of transfers is equal to burst length                                       
-	              begin                                           
+		                else state_read <= state_read;                                       
+		              end                                       
+		            Rdata:        //At this state, slave is ready to send the data packets until the number of transfers is equal to burst length                                       
+		              begin                                           
 	                if (S_AXI_RVALID && S_AXI_RREADY)                                       
 	                  begin                                       
 	                    axi_rvalid <= 1'b0;                                       
 	                    axi_arready <= 1'b1;                                       
 	                    state_read <= Raddr;                                       
 	                  end                                       
-	                else state_read <= state_read;                                       
-	              end                                       
-	           endcase                                       
-	          end                                       
-	        end                                         
+		                else state_read <= state_read;                                       
+		              end                                       
+		            default:
+		              begin
+		                axi_arready <= 1'b0;
+		                axi_rvalid <= 1'b0;
+		                axi_rresp <= 2'b0;
+		                state_read <= Idle;
+		              end
+		           endcase                                       
+		          end                                       
+		        end                                         
 	// Implement memory mapped register select and read logic generation
 	//assign S_AXI_RDATA = (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h0) ? slv_reg0 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h1) ? slv_reg1 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h2) ? slv_reg2 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h3) ? slv_reg3 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h4) ? slv_reg4 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h5) ? slv_reg5 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h6) ? slv_reg6 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h7) ? slv_reg7 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h8) ? slv_reg8 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'h9) ? slv_reg9 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hA) ? slv_reg10 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hB) ? slv_reg11 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hC) ? slv_reg12 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hD) ? slv_reg13 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hE) ? slv_reg14 : (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hF) ? slv_reg15 : 0;
 always@(*) begin	  
@@ -477,29 +471,29 @@ assign ui_cntr_done     = (ui_cntr     == ui_divisor);
 assign sof_ui_cntr_done = (sof_ui_cntr == sof_ui_divisor);
 
 always@(posedge S_AXI_ACLK) begin
-    casex({S_AXI_ARESETN, ui_cntr_done})
-        2'b0x: ui_cntr <= 0;
+    casez({S_AXI_ARESETN, ui_cntr_done})
+        2'b0?: ui_cntr <= 0;
         2'b11: ui_cntr <= 0;
         2'b10: ui_cntr <= ui_cntr + 1;
         default: ui_cntr <= ui_cntr;
     endcase
     
-    casex({S_AXI_ARESETN, ui_cntr_done})
-        2'b0x:   pulse_ui <= 1'b0;
+    casez({S_AXI_ARESETN, ui_cntr_done})
+        2'b0?:   pulse_ui <= 1'b0;
         2'b11:   pulse_ui <= 1'b1;
         default: pulse_ui <= 1'b0; 
     endcase
     
-    casex({S_AXI_ARESETN, ch_en_z, sof_ui_cntr_done, ui_cntr_done})
-        4'b0xxx: sof_ui_cntr <= 0;
-        4'b11xx: sof_ui_cntr <= 0;
-		4'b101x: sof_ui_cntr <= 0;
-        4'b1001:  sof_ui_cntr <= sof_ui_cntr + 1;
+    casez({S_AXI_ARESETN, ch_en_z, sof_ui_cntr_done, ui_cntr_done})
+        4'b0???: sof_ui_cntr <= 0;
+        4'b11??: sof_ui_cntr <= 0;
+			4'b101?: sof_ui_cntr <= 0;
+        4'b1001: sof_ui_cntr <= sof_ui_cntr + 1;
         default: sof_ui_cntr <= sof_ui_cntr;
     endcase
     
-    casex({S_AXI_ARESETN, sof_ui_cntr_done})
-        2'b0x:   pulse_sof <= 1'b0;
+    casez({S_AXI_ARESETN, sof_ui_cntr_done})
+        2'b0?:   pulse_sof <= 1'b0;
         2'b11:   pulse_sof <= 1'b1;
         default: pulse_sof <= 1'b0;
     endcase
