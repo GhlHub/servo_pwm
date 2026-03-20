@@ -17,7 +17,7 @@ The [AMD/Xilinx Timer / Counter IP Core](https://docs.amd.com/r/en-US/pg079-axi-
 - This IP Core operates in terms of Unit Interval or abbreviated as UI. This is what allows this core to be flight firmware friendly. The *UI Clock Ticks Register* is implemented as a terminal-count divisor, so a programmed value of `N` generates one UI pulse every `N+1` AXI clock cycles. In the case for RC Servo Motor Control, a convienant UI is the number of clock ticks for 1uS minus one. In this way the flight controller firmware can write 1000 for 1mS, 1500 for 1.5mS and 2000 for 2mS to the *Channel x UI Count Register*. 
 - In addition the *Channel x UI Count Register* is internally double buffered so modifying the register's value in the middle of a PWM Frame will not cause a glitch on the output.
 - Only the per-channel pulse width registers are frame-latched. Writes to the *UI Clock Ticks Register* and *Frame UI Count Register* are applied directly to the live timing logic. This is intentional design behavior, so software should avoid updating those registers in the middle of an active frame unless an immediate timing change is desired.
-- Similarly the PWM Frame Width is defined in units of UI. The *Frame UI Count Register* is also implemented as a terminal count, so a programmed value of `N` spans `N+1` UI intervals before the next start-of-frame pulse. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 19999 to *Frame UI Count Register* for a 20000 UI frame. Writing 14999 to the *Frame UI Count Register* sets the frame width to 15000 UI. Easy.
+- Similarly the PWM Frame Width is defined in units of UI. A typical PWM Frame Width for RC Servos is 20mS. So the firmware can write 20000 to *Frame UI Count Register* for a 20000 UI frame. Writing 15000 to the *Frame UI Count Register* sets the frame width to 15000 UI.
 
 # Register Interface
 ## List of registers
@@ -61,7 +61,7 @@ Note: All registers are 32-bits wide.
 | - | - |
 | Reserved | Frame UI Count |
 
-- Frame UI Count - Terminal count for the frame divider. A value of `N` spans `N+1` UI intervals per frame.
+- Frame UI Count - Defines the frame width in UI intervals.
 - Writes take effect immediately and are not frame-latched.
 
 ### Channel 0 UI Count Register
