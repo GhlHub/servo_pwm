@@ -3,6 +3,9 @@
 ## Description
 This is a 4 Channel RC Servo PWM Controller with an AXI4-Lite processor interface implemented in RTL. This RC Servo PWM Controller is packaged as an AMD/Xilinx IP Core. Multiple instances can be instanciated to support more channels.
 
+Packaged IP metadata for Vivado repository discovery lives under `ip_repo/servo_pwm/`.
+The source collateral remains in the repository root under `src/`, `xgui/`, and `drivers/`.
+
 ## But my CPU / SoC / microcontroller already has a PWM generator
 True, but I doubt the microcontroller has 8 or 12 PWM generators. You could use the microcontroller's existing PWM generators for a couple of channels and implement the remaining channels using timers and some software code. But that will likely introduce some amount of jitter. In addition the software generated PWM pulses and will be slightly different than the hardware generated PWM pulses. This is because the hardware generated PWM pulses will always be identical. You could decide this is good enough for your application. But by using this IP core, you can rest assure that the generated pulses will be identical and free of jitter. To me this is important because I feel that your finished system is only as good as the foundation it's built on.
 
@@ -90,3 +93,20 @@ Notes:
 - This is a synthesis-only estimate. Post-place/post-route utilization can differ.
 - LUT count is the Vivado synthesized value after LUT combining and is typically somewhat conservative before full implementation.
 - The estimate includes the 4 `OBUFT` output buffers used by the PWM pins.
+
+# IP Packaging
+
+To regenerate the Vivado repository copy under `ip_repo/servo_pwm/`, run:
+
+```bash
+vivado -mode batch -source package_ip_core.tcl
+```
+
+This flow:
+
+- copies the packaged core collateral into `ip_repo/servo_pwm/`
+- repackages the copied `component.xml` using Vivado IP packager checks
+- repackages against the copied `src/` tree next to that `component.xml`, not the root package
+- refreshes the committed `ip_repo/servo_pwm/component.xml` in place
+
+Vivado projects should point `ip_repo_paths` at `ip_repo/`.

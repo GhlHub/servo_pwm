@@ -5,7 +5,7 @@
 This repository contains a 4-channel RC servo PWM IP core with:
 
 - RTL in `src/`
-- Vivado IP packaging metadata in `component.xml` and `xgui/`
+- Vivado IP packaging metadata under `ip_repo/servo_pwm/`
 - A bare-metal software driver in `drivers/servo_pwm_v1_0/src/`
 - RTL and software-side tests in `tb/`
 
@@ -26,9 +26,11 @@ The packaged IP version is currently `1.1`.
 - `drivers/servo_pwm_v1_0/src/`
   C driver and public headers.
 - `scripts/repackage_ip.tcl`
-  Vivado batch Tcl to reopen and repackage the IP core from `component.xml`.
+  Vivado batch Tcl to reopen and repackage a selected packaged `component.xml`.
 - `scripts/repackage_ip.sh`
   Shell wrapper for the Vivado repackaging flow.
+- `package_ip_core.tcl`
+  Vivado batch Tcl to copy the packaged core into `ip_repo/servo_pwm/` and repackage that copy.
 - `scripts/estimate_resources.tcl`
   Vivado batch Tcl for out-of-context resource estimation of the top-level RTL.
 - `tb/servo_pwm_tb.sv`
@@ -87,16 +89,26 @@ Use:
 
 This runs Vivado in batch mode and:
 
-- opens the packaged IP from `component.xml`
+- opens the selected packaged `component.xml`
 - merges current file, port, and parameter changes
 - regenerates the XGUI Tcl
 - runs IP integrity checks
 - saves the packaged core back into the repo
 
+To refresh the Vivado repository copy used by `ip_repo_paths`, run:
+
+```bash
+vivado -mode batch -source package_ip_core.tcl
+```
+
+This copies `src/`, `xgui/`, and `drivers/` into `ip_repo/servo_pwm/`, restores the committed `ip_repo/servo_pwm/component.xml` template, and then repackages that copied core in place.
+`scripts/repackage_ip.tcl` detects the target `component.xml` from `SERVO_PWM_COMPONENT_XML` when set.
+
 Expected outputs after repackaging:
 
-- `component.xml` may be refreshed
+- `ip_repo/servo_pwm/component.xml` may be refreshed
 - `xgui/servo_pwm_v1_1.tcl` may be regenerated
+- `ip_repo/servo_pwm/component.xml` is refreshed when using `package_ip_core.tcl`
 
 ### Resource estimation
 
@@ -125,12 +137,13 @@ Current measured estimate recorded in the README:
 ## Packaging / Versioning Notes
 
 - When bumping the packaged IP version, update:
-  - `component.xml`
+  - `ip_repo/servo_pwm/component.xml`
   - `xgui/servo_pwm_vX_Y.tcl`
   - versioned RTL wrapper names if they are part of the packaged source list
   - display/component names in `component.xml`
   - `xilinx:canUpgradeFrom` so the VLNV matches the actual vendor/library/name namespace
 - After packaging-related source changes, run `./scripts/repackage_ip.sh` instead of editing package checksums by hand.
+- After changing the packaged repo layout or anything that should be visible through Vivado `ip_repo_paths`, run `vivado -mode batch -source package_ip_core.tcl`.
 - After structural RTL changes that may affect area, rerun `scripts/estimate_resources.tcl` and update the README if the reported utilization changes materially.
 - Current VLNV namespace is:
   - vendor: `SFG`

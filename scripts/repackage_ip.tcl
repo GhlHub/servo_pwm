@@ -1,6 +1,11 @@
 set script_dir [file normalize [file dirname [info script]]]
 set repo_dir [file normalize [file join $script_dir ".."]]
-set component_xml [file join $repo_dir "component.xml"]
+if {[info exists ::env(SERVO_PWM_COMPONENT_XML)] && $::env(SERVO_PWM_COMPONENT_XML) ne ""} {
+    set component_xml [file normalize $::env(SERVO_PWM_COMPONENT_XML)]
+} else {
+    set component_xml [file join $repo_dir "component.xml"]
+}
+set package_dir [file dirname $component_xml]
 set tmp_dir [file join $repo_dir ".ipx_repackage_tmp"]
 
 if {![file exists $component_xml]} {
@@ -32,9 +37,9 @@ ipx::edit_ip_in_project \
     -directory $project_dir \
     $component_xml
 
-set src_files [lsort [glob -nocomplain [file join $repo_dir "src" "*.v"]]]
+set src_files [lsort [glob -nocomplain [file join $package_dir "src" "*.v"]]]
 if {[llength $src_files] == 0} {
-    puts stderr "ERROR: No RTL sources found under [file join $repo_dir src]"
+    puts stderr "ERROR: No RTL sources found under [file join $package_dir src]"
     close_project -delete
     exit 1
 }

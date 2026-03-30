@@ -784,7 +784,7 @@
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>SFG:user:servo_pwm:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2026-03-20T13:57:24Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-03-30T02:54:33Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2025.2</xilinx:xilinxVersion>
